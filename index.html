@@ -136,7 +136,9 @@
     <div class="card" style="margin-top:14px">
       <div class="cardtitle">Backup</div>
       <button class="btn ghost" id="exportBtn" style="margin-top:0">Download my data</button>
-      <div class="note">Your data lives on this device. Grab a backup now and then, especially before clearing Safari data or changing phones.</div>
+      <button class="btn ghost" id="importBtn">Restore from backup</button>
+      <input type="file" accept=".json,application/json" id="importFile" style="display:none">
+      <div class="note">Your data lives on this device — and note the Home Screen app and Safari each keep their own separate copy. Grab a backup now and then, and use Restore to move data between them or to a new phone.</div>
     </div>
   </div>
 </div>
@@ -380,6 +382,28 @@
     a.href=URL.createObjectURL(blob);
     a.download='weight-tracker-backup.json';
     a.click();
+  });
+
+  document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const p=JSON.parse(ev.target.result);
+        if(!p.data||!Array.isArray(p.data.entries)) throw new Error('bad');
+        // merge entries: imported wins on date clashes
+        const existing=data.entries.filter(x=>!p.data.entries.some(y=>y.d===x.d));
+        data={entries:[...existing,...p.data.entries],goal:p.data.goal??data.goal,startW:p.data.startW??data.startW};
+        save();
+        if(p.photoBefore){try{localStorage.setItem(PB,JSON.stringify(p.photoBefore));}catch(err){}}
+        if(p.photoAfter){try{localStorage.setItem(PA,JSON.stringify(p.photoAfter));}catch(err){}}
+        render(); hideErr();
+        alert('Backup restored — '+p.data.entries.length+' check-ins imported.');
+      }catch(err){showErr("That file doesn't look like a valid backup.");}
+    };
+    r.readAsText(f);
+    e.target.value='';
   });
 
   load(); render();
