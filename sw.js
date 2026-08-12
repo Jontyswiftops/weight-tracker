@@ -1,6 +1,6 @@
 // Weight Check-in service worker: network-first for same-origin requests,
 // cache fallback for offline.
-const CACHE = 'weight-mates-v4';
+const CACHE = 'weight-mates-v5';
 const ASSETS = [
   './',
   'index.html',
@@ -38,7 +38,9 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    // cache: 'no-cache' revalidates instead of trusting the HTTP cache's
+    // 10-minute GitHub Pages max-age, so deploys reach devices immediately
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
