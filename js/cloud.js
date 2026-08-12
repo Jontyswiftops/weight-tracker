@@ -31,6 +31,14 @@ export const sendMagicLink = email =>
 export const signInPassword = (email, password) =>
   sb.auth.signInWithPassword({ email, password });
 
+// The 6-digit code from the sign-in email; lets iOS Home Screen users sign
+// in without leaving the app (magic links always open in Safari instead).
+export const verifyEmailCode = (email, token) =>
+  sb.auth.verifyOtp({ email, token: token.trim(), type: 'email' });
+
+export const setPassword = password =>
+  sb.auth.updateUser({ password });
+
 export const signUpPassword = (email, password) =>
   sb.auth.signUp({ email, password, options: { emailRedirectTo: appUrl() } });
 

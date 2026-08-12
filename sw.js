@@ -1,6 +1,6 @@
 // Weight Check-in service worker: network-first for same-origin requests,
 // cache fallback for offline.
-const CACHE = 'weight-mates-v1';
+const CACHE = 'weight-mates-v2';
 const ASSETS = [
   './',
   'index.html',

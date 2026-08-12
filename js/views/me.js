@@ -35,10 +35,15 @@ export function render(ctx) {
   if (!u) {
     el.innerHTML =
       '<div class="card"><div class="cardtitle">Sign in</div>' +
-      '<p class="note" style="margin-top:0">Back up your check-ins, sync across devices, and join group challenges. We email you a sign-in link. No password needed.</p>' +
+      '<p class="note" style="margin-top:0">Back up your check-ins, sync across devices, and join group challenges. We email you a sign-in code. No password needed.</p>' +
       '<input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">' +
-      '<button class="btn" id="magicBtn">Email me a sign-in link</button>' +
+      '<button class="btn" id="magicBtn">Email me a sign-in code</button>' +
       '<div class="note" id="authStatus"></div>' +
+      '<div id="otpBox" hidden>' +
+      '<label class="flabel" for="otpInput">6-digit code from the email</label>' +
+      '<div class="row"><input type="text" id="otpInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">' +
+      '<button class="btn small" id="otpBtn">Verify</button></div>' +
+      '</div>' +
       '<button class="linkbtn" id="pwToggle">Use a password instead</button>' +
       '<div id="pwBox" hidden>' +
       '<input type="password" id="authPw" placeholder="Password" autocomplete="current-password">' +
@@ -54,9 +59,23 @@ export function render(ctx) {
       e.target.disabled = true;
       const { error } = await cloud.sendMagicLink(email);
       e.target.disabled = false;
-      status.textContent = error
-        ? 'Could not send the link: ' + error.message
-        : 'Check your email and tap the link to sign in. It can take a minute to arrive.';
+      if (error) {
+        status.textContent = 'Could not send the email: ' + error.message;
+      } else {
+        status.textContent = 'Check your email, then type the 6-digit code below. It can take a minute to arrive.';
+        el.querySelector('#otpBox').hidden = false;
+        el.querySelector('#otpInput').focus();
+      }
+    });
+    el.querySelector('#otpBtn').addEventListener('click', async e => {
+      const email = el.querySelector('#authEmail').value.trim();
+      const token = el.querySelector('#otpInput').value.trim();
+      const status = el.querySelector('#authStatus');
+      if (token.length < 6) { status.textContent = 'Enter the 6-digit code from the email.'; return; }
+      e.target.disabled = true;
+      const { error } = await cloud.verifyEmailCode(email, token);
+      e.target.disabled = false;
+      if (error) status.textContent = 'That code did not work: ' + error.message + ' Codes expire after a while; you can request a new one.';
     });
     el.querySelector('#pwToggle').addEventListener('click', () => {
       const box = el.querySelector('#pwBox');
@@ -70,8 +89,13 @@ export function render(ctx) {
       const { error } = signUp
         ? await cloud.signUpPassword(email, pw)
         : await cloud.signInPassword(email, pw);
-      if (error) status.textContent = error.message;
-      else if (signUp) status.textContent = 'Account created. Check your email if confirmation is required.';
+      if (error) {
+        status.textContent = /invalid login credentials/i.test(error.message)
+          ? 'That email and password do not match. If you normally sign in with an emailed code, your account has no password yet: sign in with a code, then set a password from the Me tab.'
+          : error.message;
+      } else if (signUp) {
+        status.textContent = 'Account created. Check your email if confirmation is required.';
+      }
     };
     el.querySelector('#pwSignIn').addEventListener('click', () => pwAuth(false));
     el.querySelector('#pwSignUp').addEventListener('click', () => pwAuth(true));
@@ -83,6 +107,10 @@ export function render(ctx) {
       '<label class="flabel" for="nameInput">Display name (what your groups see)</label>' +
       '<div class="row"><input type="text" id="nameInput" maxlength="40" value="' + esc(profile?.display_name || '') + '">' +
       '<button class="btn small" id="nameBtn">Save</button></div>' +
+      '<label class="flabel" for="setPwInput">Set a password (optional, lets you sign in without email codes)</label>' +
+      '<div class="row"><input type="password" id="setPwInput" autocomplete="new-password" placeholder="New password">' +
+      '<button class="btn small" id="setPwBtn">Set</button></div>' +
+      '<div class="note" id="setPwStatus" style="margin-top:6px"></div>' +
       '<button class="linkbtn" id="signOutBtn">Sign out</button></div>' +
       goalCard(t) + backupCard() +
       '<div class="card"><div class="cardtitle">Privacy</div>' +
@@ -96,6 +124,19 @@ export function render(ctx) {
         profile = { ...(profile || {}), display_name: name };
         toast('Name saved');
       } catch (err) { showErr('Could not save your name: ' + err.message); }
+    });
+    el.querySelector('#setPwBtn').addEventListener('click', async e => {
+      const pw = el.querySelector('#setPwInput').value;
+      const status = el.querySelector('#setPwStatus');
+      if (pw.length < 6) { status.textContent = 'Use at least 6 characters.'; return; }
+      e.target.disabled = true;
+      const { error } = await cloud.setPassword(pw);
+      e.target.disabled = false;
+      if (error) status.textContent = 'Could not set the password: ' + error.message;
+      else {
+        el.querySelector('#setPwInput').value = '';
+        status.textContent = 'Password set. You can now sign in with it on any device.';
+      }
     });
     el.querySelector('#signOutBtn').addEventListener('click', async () => {
       await cloud.signOut();
