@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0E7C66"/>
+  <!-- scale body -->
+  <rect x="96" y="112" width="320" height="288" rx="56" fill="#FAFAF7"/>
+  <!-- dial window -->
+  <path d="M256 168a96 96 0 0 1 96 96h-40a56 56 0 0 0-112 0h-40a96 96 0 0 1 96-96z" fill="#E3F0EC"/>
+  <!-- needle pointing down-left (losing) -->
+  <path d="M256 264 L198 214 a8 8 0 0 1 11-11 L262 250 a10 10 0 1 1 -6 14z" fill="#0E7C66"/>
+  <circle cx="256" cy="264" r="14" fill="#0E7C66"/>
+  <!-- baseline -->
+  <rect x="160" y="316" width="192" height="20" rx="10" fill="#C98A2D"/>
+</svg>

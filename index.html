@@ -8,64 +8,10 @@
 <meta name="apple-mobile-web-app-title" content="Weight">
 <meta name="theme-color" content="#FAFAF7">
 <title>Weight Check-in</title>
-<style>
-  :root{
-    --ink:#132420; --soft:#5C6E68; --green:#0E7C66; --greensoft:#E3F0EC;
-    --coral:#D95D50; --paper:#FAFAF7; --card:#FFFFFF; --line:#E6E3D8; --amber:#C98A2D;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  body{margin:0; font-family:'Avenir Next','Segoe UI',system-ui,sans-serif; background:var(--paper); color:var(--ink);
-       padding-bottom:env(safe-area-inset-bottom);}
-  .wrap{max-width:480px; margin:0 auto;}
-  .header{padding:20px 18px 6px; padding-top:calc(20px + env(safe-area-inset-top));}
-  .eyebrow{font-size:12px; letter-spacing:1.4px; text-transform:uppercase; color:var(--soft);}
-  .bigrow{display:flex; align-items:baseline; gap:10px; margin-top:2px;}
-  .bignum{font-size:46px; font-weight:800; letter-spacing:-1px;}
-  .bignum span{font-size:20px; font-weight:600; color:var(--soft);}
-  .delta{font-size:16px; font-weight:700;}
-  .bar{height:8px; background:var(--line); border-radius:99px; overflow:hidden; margin-top:8px;}
-  .barfill{height:100%; background:var(--green); border-radius:99px; transition:width .4s; width:0;}
-  .barlabels{display:flex; justify-content:space-between; font-size:12px; color:var(--soft); margin-top:4px;}
-  .tabs{display:flex; border-bottom:1px solid var(--line); margin-top:8px; position:sticky; top:0; background:var(--paper); z-index:5;}
-  .tab{flex:1; padding:11px 0; border:none; background:transparent; border-bottom:3px solid transparent;
-       color:var(--soft); font-weight:500; font-size:14px; font-family:inherit; cursor:pointer;}
-  .tab.active{border-bottom-color:var(--green); color:var(--ink); font-weight:700;}
-  .page{padding:18px; display:none;}
-  .page.active{display:block;}
-  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;}
-  .cardtitle{font-size:14px; font-weight:700; margin-bottom:10px;}
-  .row{display:flex; gap:8px;}
-  input[type=number],input[type=date]{padding:12px; font-size:16px; border-radius:12px; border:1px solid var(--line);
-       background:var(--paper); font-family:inherit; width:100%; min-width:0; color:var(--ink);}
-  input[type=number]{flex:1.2;} input[type=date]{flex:1;}
-  .btn{margin-top:10px; width:100%; padding:13px 0; border-radius:12px; border:none; background:var(--green); color:#fff;
-       font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; transition:background .2s;}
-  .btn:disabled{background:var(--line); color:var(--soft);}
-  .btn.ghost{background:var(--greensoft); color:var(--green);}
-  .chips{display:flex; gap:8px; margin-top:14px;}
-  .chip{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 12px; flex:1; min-width:0;}
-  .chiplabel{font-size:11px; color:var(--soft); text-transform:uppercase; letter-spacing:.6px;}
-  .chipval{font-size:17px; font-weight:700; margin-top:2px; white-space:nowrap;}
-  .chartcard{margin-top:14px; padding:16px 10px 10px;}
-  .legend{display:flex; gap:14px; justify-content:center; font-size:11px; color:var(--soft); padding-top:8px;}
-  .empty{margin-top:14px; text-align:center; color:var(--soft); font-size:14px; padding:24px 12px; background:var(--greensoft); border-radius:16px; line-height:1.5;}
-  .hitem{display:flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:8px;}
-  .hdate{flex:1; font-weight:700; font-size:15px;}
-  .hdate small{color:var(--soft); font-weight:400; font-size:12px;}
-  .hweight{font-weight:700; font-size:16px; margin-right:10px;}
-  .hdiff{font-size:13px; font-weight:700; width:52px; text-align:right; margin-right:8px;}
-  .xbtn{border:none; background:transparent; color:var(--soft); font-size:16px; cursor:pointer; padding:4px;}
-  .photos{display:flex; gap:10px;}
-  .photobox{flex:1; background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
-  .photohead{padding:10px 12px; font-weight:700; font-size:13px; text-transform:capitalize; display:flex; justify-content:space-between; align-items:center;}
-  .photobox img{width:100%; display:block; aspect-ratio:3/4; object-fit:cover;}
-  .photometa{padding:8px 12px; font-size:12px; color:var(--soft);}
-  .photoadd{width:100%; aspect-ratio:3/4; border:none; background:var(--greensoft); color:var(--green); font-weight:700; font-size:14px; cursor:pointer; font-family:inherit;}
-  .note{font-size:12px; color:var(--soft); margin-top:14px; line-height:1.5;}
-  .err{margin:10px 18px 0; padding:8px 12px; background:#FDECEA; color:var(--coral); border-radius:10px; font-size:13px; display:none;}
-  .compare{margin-top:14px; text-align:center; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; font-size:14px; font-weight:700;}
-  .good{color:var(--green);} .bad{color:var(--coral);} .neutral{color:var(--soft);}
-</style>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="wrap">
@@ -84,13 +30,15 @@
   <div class="tabs">
     <button class="tab active" data-page="home">Today</button>
     <button class="tab" data-page="history">History</button>
+    <button class="tab" data-page="groups">Groups</button>
     <button class="tab" data-page="photos">Photos</button>
-    <button class="tab" data-page="goal">Goal</button>
+    <button class="tab" data-page="me">Me</button>
   </div>
 
   <div class="err" id="errBox"></div>
 
   <div class="page active" id="page-home">
+    <div id="homeBanner"></div>
     <div class="card">
       <div class="cardtitle">Log a weigh-in</div>
       <div class="row">
@@ -101,21 +49,23 @@
     </div>
     <div class="chips">
       <div class="chip"><div class="chiplabel">Streak</div><div class="chipval" id="streakVal">0 days</div></div>
-      <div class="chip"><div class="chiplabel">This week</div><div class="chipval" id="weekVal">—</div></div>
-      <div class="chip"><div class="chiplabel">Goal</div><div class="chipval" id="goalVal">Set one →</div></div>
+      <div class="chip"><div class="chiplabel">This week</div><div class="chipval" id="weekVal">--</div></div>
+      <div class="chip"><div class="chiplabel">Goal</div><div class="chipval" id="goalVal">Set one</div></div>
     </div>
     <div class="card chartcard" id="chartCard" style="display:none">
       <div class="cardtitle" style="margin-left:6px">Trend</div>
       <canvas id="chart" height="220"></canvas>
-      <div class="legend"><span><b style="color:var(--green)">—</b> 7-day average</span><span>· daily weigh-ins</span><span id="legendGoal" style="display:none"><b style="color:var(--amber)">- -</b> goal</span></div>
+      <div class="legend"><span><b style="color:var(--green)">&#8212;</b> 7-day average</span><span>&middot; daily weigh-ins</span><span id="legendGoal" style="display:none"><b style="color:var(--amber)">- -</b> goal</span></div>
     </div>
-    <div class="empty" id="emptyMsg">Log a couple of weigh-ins and your trend chart will appear here. Daily weight bounces around — the 7-day average is the number to watch.</div>
+    <div class="empty" id="emptyMsg">Log a couple of weigh-ins and your trend chart will appear here. Daily weight bounces around; the 7-day average is the number to watch.</div>
   </div>
 
   <div class="page" id="page-history"><div id="historyList"></div></div>
 
+  <div class="page" id="page-groups"><div id="groupsView"></div></div>
+
   <div class="page" id="page-photos">
-    <div class="note" style="margin:0 0 12px">Take your "before" now, then add an "after" whenever you want to compare. Same pose, same lighting works best.</div>
+    <div class="note" style="margin:0 0 12px">Take your "before" now, then add an "after" whenever you want to compare. Same pose, same lighting works best. Photos are private: they are never shown to your groups.</div>
     <div class="photos">
       <div class="photobox" id="box-before"></div>
       <div class="photobox" id="box-after"></div>
@@ -125,310 +75,10 @@
     <input type="file" accept="image/*" id="file-after" style="display:none">
   </div>
 
-  <div class="page" id="page-goal">
-    <div class="card">
-      <div class="cardtitle">Goal weight</div>
-      <input type="number" inputmode="decimal" step="0.1" id="goalInput" placeholder="e.g. 85">
-      <button class="btn" id="goalBtn">Save goal</button>
-      <div class="note" id="startNote" style="display:none"></div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <div class="cardtitle">Backup</div>
-      <button class="btn ghost" id="exportBtn" style="margin-top:0">Download my data</button>
-      <button class="btn ghost" id="importBtn">Restore from backup</button>
-      <input type="file" accept=".json,application/json" id="importFile" style="display:none">
-      <div class="note">Your data lives on this device — and note the Home Screen app and Safari each keep their own separate copy. Grab a backup now and then, and use Restore to move data between them or to a new phone.</div>
-    </div>
-  </div>
+  <div class="page" id="page-me"><div id="meView"></div></div>
 </div>
-
-<script>
-(function(){
-  const KEY='wt:data', PB='wt:photo:before', PA='wt:photo:after';
-  let data={entries:[],goal:null,startW:null};
-
-  // ---- storage ----
-  function load(){
-    try{const raw=localStorage.getItem(KEY); if(raw) data=JSON.parse(raw);}catch(e){}
-  }
-  function save(){
-    try{localStorage.setItem(KEY,JSON.stringify(data)); hideErr();}
-    catch(e){showErr("Couldn't save — device storage may be full.");}
-  }
-  function loadPhoto(k){try{const r=localStorage.getItem(k); return r?JSON.parse(r):null;}catch(e){return null;}}
-  function showErr(m){const b=document.getElementById('errBox'); b.textContent=m; b.style.display='block';}
-  function hideErr(){document.getElementById('errBox').style.display='none';}
-
-  // ---- helpers ----
-  const pad=n=>String(n).padStart(2,'0');
-  function todayStr(){const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-  function fmtDate(iso){const p=iso.split('-'); return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('en-AU',{day:'numeric',month:'short'});}
-  function daysBetween(a,b){const pa=a.split('-'),pb=b.split('-');
-    return Math.round((new Date(pb[0],pb[1]-1,pb[2])-new Date(pa[0],pa[1]-1,pa[2]))/86400000);}
-  function signed(v,suf){if(v==null)return '—'; return (v>0?'+':'')+v.toFixed(1)+(suf==null?' kg':suf);}
-  function cls(v){return v==null?'neutral':(v<0?'good':(v>0?'bad':'neutral'));}
-  function sortedEntries(){return [...data.entries].sort((a,b)=>a.d<b.d?-1:1);}
-
-  // ---- render ----
-  function render(){
-    const s=sortedEntries();
-    const latest=s[s.length-1]||null, first=s[0]||null;
-    const start=data.startW!=null?data.startW:(first?first.w:null);
-
-    // header
-    document.getElementById('bigWeight').innerHTML=(latest?latest.w.toFixed(1):'--.-')+'<span> kg</span>';
-    const bd=document.getElementById('bigDelta');
-    if(latest&&start!=null){const t=latest.w-start; bd.textContent=signed(t); bd.className='delta '+cls(t);}else bd.textContent='';
-
-    // goal bar
-    const gp=document.getElementById('goalProgress');
-    if(data.goal!=null&&start!=null&&latest&&start!==data.goal){
-      const pct=Math.max(0,Math.min(100,((start-latest.w)/(start-data.goal))*100));
-      const toGo=latest.w-data.goal;
-      gp.style.display='block';
-      document.getElementById('barFill').style.width=pct+'%';
-      document.getElementById('pctLabel').textContent=pct.toFixed(0)+'% to goal';
-      document.getElementById('toGoLabel').textContent=toGo>0?toGo.toFixed(1)+' kg to go':'Goal reached 🎉';
-    } else gp.style.display='none';
-
-    // chips
-    document.getElementById('streakVal').textContent=streak(s)+' day'+(streak(s)===1?'':'s');
-    const wd=weeklyDelta(s);
-    const wv=document.getElementById('weekVal'); wv.textContent=signed(wd); wv.className='chipval '+cls(wd);
-    document.getElementById('goalVal').textContent=data.goal!=null?data.goal+' kg':'Set one →';
-
-    // chart
-    renderHistory(s);
-    renderPhotos(latest);
-    try{renderChart(s);}catch(e){}
-
-    const gi=document.getElementById('goalInput');
-    if(data.goal!=null&&!gi.value) gi.value=data.goal;
-    const sn=document.getElementById('startNote');
-    if(start!=null){sn.style.display='block'; sn.textContent='Progress is measured from your starting weight of '+start.toFixed(1)+' kg.';}
-  }
-
-  function streak(s){
-    if(!s.length) return 0;
-    const dates=new Set(s.map(e=>e.d));
-    let cursor=todayStr();
-    if(!dates.has(cursor)){
-      const y=new Date(); y.setDate(y.getDate()-1);
-      cursor=y.getFullYear()+'-'+pad(y.getMonth()+1)+'-'+pad(y.getDate());
-      if(!dates.has(cursor)) return 0;
-    }
-    let c=0;
-    while(dates.has(cursor)){
-      c++;
-      const p=cursor.split('-');
-      const prev=new Date(p[0],p[1]-1,p[2]-1);
-      cursor=prev.getFullYear()+'-'+pad(prev.getMonth()+1)+'-'+pad(prev.getDate());
-    }
-    return c;
-  }
-
-  function rollingAvg(s){
-    return s.map(e=>{
-      const win=s.filter(x=>x.d<=e.d&&daysBetween(x.d,e.d)<=6);
-      return {d:e.d,label:fmtDate(e.d),w:e.w,avg:win.reduce((a,x)=>a+x.w,0)/win.length};
-    });
-  }
-
-  function weeklyDelta(s){
-    const cd=rollingAvg(s);
-    if(cd.length<8) return null;
-    const last=cd[cd.length-1];
-    const older=cd.filter(e=>daysBetween(e.d,last.d)>=7);
-    if(!older.length) return null;
-    return last.avg-older[older.length-1].avg;
-  }
-
-  function renderChart(sArr){
-    const cd=rollingAvg(sArr);
-    const cardEl=document.getElementById('chartCard'), emptyEl=document.getElementById('emptyMsg');
-    if(cd.length<2){cardEl.style.display='none'; emptyEl.style.display='block'; return;}
-    cardEl.style.display='block'; emptyEl.style.display='none';
-    document.getElementById('legendGoal').style.display=data.goal!=null?'inline':'none';
-    const css=getComputedStyle(document.documentElement);
-    const green=css.getPropertyValue('--green').trim(), soft=css.getPropertyValue('--soft').trim(),
-          gline=css.getPropertyValue('--line').trim(), amber=css.getPropertyValue('--amber').trim();
-    const canvas=document.getElementById('chart');
-    const W=Math.max(280,(canvas.parentElement.clientWidth||320)-8), H=240;
-    const dpr=window.devicePixelRatio||1;
-    canvas.width=W*dpr; canvas.height=H*dpr;
-    canvas.style.width=W+'px'; canvas.style.height=H+'px';
-    const ctx=canvas.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,W,H);
-    let vals=cd.map(e=>e.w);
-    if(data.goal!=null) vals=vals.concat([data.goal]);
-    const min=Math.min.apply(null,vals)-0.8, max=Math.max.apply(null,vals)+0.8;
-    const padL=36,padR=10,padT=10,padB=24;
-    const X=i=>padL+(W-padL-padR)*(cd.length===1?0.5:i/(cd.length-1));
-    const Y=v=>padT+(H-padT-padB)*(1-(v-min)/(max-min));
-    // grid + y labels
-    ctx.font='11px system-ui,sans-serif'; ctx.fillStyle=soft; ctx.textAlign='left';
-    for(let t=0;t<=4;t++){
-      const v=min+(max-min)*t/4, y=Y(v);
-      ctx.strokeStyle=gline; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
-      ctx.fillText(v.toFixed(1),2,y+4);
-    }
-    // x labels: first, middle, last
-    ctx.textAlign='center';
-    const idxs=[0,Math.floor((cd.length-1)/2),cd.length-1].filter((v,i,a)=>a.indexOf(v)===i);
-    idxs.forEach(i=>ctx.fillText(cd[i].label,Math.min(Math.max(X(i),padL+14),W-24),H-6));
-    // goal line
-    if(data.goal!=null&&data.goal>min&&data.goal<max){
-      ctx.strokeStyle=amber; ctx.lineWidth=2; ctx.setLineDash([6,4]);
-      ctx.beginPath(); ctx.moveTo(padL,Y(data.goal)); ctx.lineTo(W-padR,Y(data.goal)); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    // daily weigh-in line + dots
-    ctx.strokeStyle=gline; ctx.lineWidth=1.5; ctx.beginPath();
-    cd.forEach((e,i)=>{i===0?ctx.moveTo(X(i),Y(e.w)):ctx.lineTo(X(i),Y(e.w));});
-    ctx.stroke();
-    ctx.fillStyle=soft;
-    cd.forEach((e,i)=>{ctx.beginPath(); ctx.arc(X(i),Y(e.w),2.5,0,Math.PI*2); ctx.fill();});
-    // 7-day average line
-    ctx.strokeStyle=green; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.beginPath();
-    cd.forEach((e,i)=>{i===0?ctx.moveTo(X(i),Y(e.avg)):ctx.lineTo(X(i),Y(e.avg));});
-    ctx.stroke();
-  }
-
-  function renderHistory(s){
-    const list=document.getElementById('historyList');
-    if(!s.length){list.innerHTML='<div class="empty" style="margin-top:0">No check-ins yet.</div>'; return;}
-    const rev=[...s].reverse();
-    list.innerHTML=rev.map((e,i)=>{
-      const prev=rev[i+1];
-      const diff=prev?e.w-prev.w:null;
-      return '<div class="hitem">'+
-        '<div class="hdate">'+fmtDate(e.d)+' <small>'+e.d.slice(0,4)+'</small></div>'+
-        '<div class="hweight">'+e.w.toFixed(1)+' kg</div>'+
-        (diff!=null?'<div class="hdiff '+cls(diff)+'">'+signed(diff,'')+'</div>':'<div class="hdiff"></div>')+
-        '<button class="xbtn" data-del="'+e.d+'" aria-label="Delete">✕</button></div>';
-    }).join('');
-    list.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
-      data.entries=data.entries.filter(e=>e.d!==b.dataset.del); save(); render();
-    }));
-  }
-
-  function renderPhotos(latest){
-    ['before','after'].forEach(which=>{
-      const box=document.getElementById('box-'+which);
-      const p=loadPhoto(which==='before'?PB:PA);
-      if(p){
-        box.innerHTML='<div class="photohead">'+which+'<button class="xbtn" data-rm="'+which+'">✕</button></div>'+
-          '<img src="'+p.img+'" alt="'+which+' photo">'+
-          '<div class="photometa">'+fmtDate(p.date)+(p.w!=null?' · '+p.w.toFixed(1)+' kg':'')+'</div>';
-        box.querySelector('[data-rm]').addEventListener('click',()=>{
-          localStorage.removeItem(which==='before'?PB:PA); render();
-        });
-      }else{
-        box.innerHTML='<div class="photohead">'+which+'</div>'+
-          '<button class="photoadd" data-add="'+which+'">+ Add '+which+' photo</button>';
-        box.querySelector('[data-add]').addEventListener('click',()=>document.getElementById('file-'+which).click());
-      }
-    });
-    const b=loadPhoto(PB), a=loadPhoto(PA);
-    const cb=document.getElementById('compareBox');
-    if(b&&a){
-      cb.style.display='block';
-      if(b.w!=null&&a.w!=null){const d=a.w-b.w; cb.innerHTML='<span class="'+cls(d)+'">'+signed(d)+' between photos</span>';}
-      else cb.innerHTML='<span class="neutral" style="font-weight:400">Side-by-side progress — nice work.</span>';
-    }else cb.style.display='none';
-  }
-
-  function compressAndStore(which,file){
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const img=new Image();
-      img.onload=()=>{
-        const MAX=800; let w=img.width,h=img.height;
-        if(w>MAX||h>MAX){const s=MAX/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s);}
-        const c=document.createElement('canvas'); c.width=w; c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        const dataUrl=c.toDataURL('image/jpeg',0.7);
-        const s=sortedEntries(); const latest=s[s.length-1]||null;
-        try{
-          localStorage.setItem(which==='before'?PB:PA,JSON.stringify({img:dataUrl,date:todayStr(),w:latest?latest.w:null}));
-          hideErr();
-        }catch(err){showErr('Photo too large for device storage. Try again — it will compress harder.');}
-        render();
-      };
-      img.src=e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // ---- events ----
-  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById('page-'+t.dataset.page).classList.add('active');
-    if(t.dataset.page==='home') try{renderChart(sortedEntries());}catch(e){}
-  }));
-
-  const wi=document.getElementById('weightInput'), di=document.getElementById('dateInput'), sb=document.getElementById('saveBtn');
-  di.value=todayStr(); di.max=todayStr();
-  wi.addEventListener('input',()=>{sb.disabled=!parseFloat(wi.value);});
-  sb.addEventListener('click',()=>{
-    const w=parseFloat(wi.value); if(!w||w<=0||!di.value) return;
-    data.entries=data.entries.filter(e=>e.d!==di.value);
-    data.entries.push({d:di.value,w:+w.toFixed(1)});
-    if(data.startW==null&&data.entries.length===1) data.startW=+w.toFixed(1);
-    save(); wi.value=''; sb.disabled=true;
-    sb.textContent='Saved ✓'; setTimeout(()=>{sb.textContent='Save check-in';},1600);
-    render();
-  });
-
-  document.getElementById('goalBtn').addEventListener('click',()=>{
-    const g=parseFloat(document.getElementById('goalInput').value);
-    if(!g||g<=0) return;
-    data.goal=g;
-    if(data.startW==null){const s=sortedEntries(); data.startW=s.length?s[0].w:null;}
-    save(); render();
-    document.querySelector('[data-page="home"]').click();
-  });
-
-  document.getElementById('file-before').addEventListener('change',e=>{if(e.target.files[0]) compressAndStore('before',e.target.files[0]); e.target.value='';});
-  document.getElementById('file-after').addEventListener('change',e=>{if(e.target.files[0]) compressAndStore('after',e.target.files[0]); e.target.value='';});
-
-  document.getElementById('exportBtn').addEventListener('click',()=>{
-    const payload={data:data,photoBefore:loadPhoto(PB),photoAfter:loadPhoto(PA),exported:new Date().toISOString()};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='weight-tracker-backup.json';
-    a.click();
-  });
-
-  document.getElementById('importBtn').addEventListener('click',()=>document.getElementById('importFile').click());
-  document.getElementById('importFile').addEventListener('change',e=>{
-    const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader();
-    r.onload=ev=>{
-      try{
-        const p=JSON.parse(ev.target.result);
-        if(!p.data||!Array.isArray(p.data.entries)) throw new Error('bad');
-        // merge entries: imported wins on date clashes
-        const existing=data.entries.filter(x=>!p.data.entries.some(y=>y.d===x.d));
-        data={entries:[...existing,...p.data.entries],goal:p.data.goal??data.goal,startW:p.data.startW??data.startW};
-        save();
-        if(p.photoBefore){try{localStorage.setItem(PB,JSON.stringify(p.photoBefore));}catch(err){}}
-        if(p.photoAfter){try{localStorage.setItem(PA,JSON.stringify(p.photoAfter));}catch(err){}}
-        render(); hideErr();
-        alert('Backup restored — '+p.data.entries.length+' check-ins imported.');
-      }catch(err){showErr("That file doesn't look like a valid backup.");}
-    };
-    r.readAsText(f);
-    e.target.value='';
-  });
-
-  load(); render();
-})();
-</script>
+<div id="toast"></div>
+<script src="vendor/supabase.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
