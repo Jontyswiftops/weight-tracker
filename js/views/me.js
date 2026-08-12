@@ -35,20 +35,21 @@ export function render(ctx) {
   if (!u) {
     el.innerHTML =
       '<div class="card"><div class="cardtitle">Sign in</div>' +
-      '<p class="note" style="margin-top:0">Back up your check-ins, sync across devices, and join group challenges. We email you a sign-in code. No password needed.</p>' +
+      '<p class="note" style="margin-top:0">Back up your check-ins, sync across devices, and join group challenges.</p>' +
       '<input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">' +
-      '<button class="btn" id="magicBtn">Email me a sign-in code</button>' +
+      '<div style="margin-top:8px"><input type="password" id="authPw" placeholder="Password" autocomplete="current-password"></div>' +
+      '<div class="row" style="margin-top:10px"><button class="btn" id="pwSignIn" style="margin-top:0">Sign in</button>' +
+      '<button class="btn ghost" id="pwSignUp" style="margin-top:0">Create account</button></div>' +
       '<div class="note" id="authStatus"></div>' +
+      '<button class="linkbtn" id="emailToggle">Email me a sign-in code instead</button>' +
+      '<div id="emailBox" hidden>' +
+      '<button class="btn ghost" id="magicBtn" style="margin-top:0">Email me a sign-in code</button>' +
       '<div id="otpBox" hidden>' +
       '<label class="flabel" for="otpInput">6-digit code from the email</label>' +
       '<div class="row"><input type="text" id="otpInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">' +
       '<button class="btn small" id="otpBtn">Verify</button></div>' +
       '</div>' +
-      '<button class="linkbtn" id="pwToggle">Use a password instead</button>' +
-      '<div id="pwBox" hidden>' +
-      '<input type="password" id="authPw" placeholder="Password" autocomplete="current-password">' +
-      '<div class="row" style="margin-top:10px"><button class="btn" id="pwSignIn" style="margin-top:0">Sign in</button>' +
-      '<button class="btn ghost" id="pwSignUp" style="margin-top:0">Create account</button></div>' +
+      '<div class="note">If the email only contains a link, it will open in your browser rather than this app. Signing in with a password avoids that.</div>' +
       '</div></div>' +
       goalCard(t) + backupCard();
 
@@ -77,8 +78,8 @@ export function render(ctx) {
       e.target.disabled = false;
       if (error) status.textContent = 'That code did not work: ' + error.message + ' Codes expire after a while; you can request a new one.';
     });
-    el.querySelector('#pwToggle').addEventListener('click', () => {
-      const box = el.querySelector('#pwBox');
+    el.querySelector('#emailToggle').addEventListener('click', () => {
+      const box = el.querySelector('#emailBox');
       box.hidden = !box.hidden;
     });
     const pwAuth = async signUp => {
