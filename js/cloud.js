@@ -144,10 +144,27 @@ export async function removePhotoRemote(which) {
 
 export async function myGroups() {
   const { data, error } = await sb.from('groups')
-    .select('id, name, ends_on, invite_code, created_at, group_members(user_id)')
+    .select('id, name, ends_on, invite_code, created_by, created_at, group_members(user_id)')
     .order('created_at');
   if (error) throw error;
   return data;
+}
+
+export async function updateGroup(gid, patch) {
+  const { error } = await sb.from('groups').update(patch).eq('id', gid);
+  if (error) throw error;
+}
+
+export async function removeMember(gid, uid) {
+  const { error } = await sb.from('group_members')
+    .delete().eq('group_id', gid).eq('user_id', uid);
+  if (error) throw error;
+}
+
+export async function memberHistory(gid, member) {
+  const { data, error } = await sb.rpc('member_history', { gid, member });
+  if (error) throw error;
+  return data.map(r => ({ d: r.d, w: Number(r.w) }));
 }
 
 export async function createGroup(name, endsOn) {
@@ -187,9 +204,10 @@ export async function groupFeed(gid) {
   return data;
 }
 
-export async function setShareWeight(gid, share) {
+// fields: { share_weight?, share_history? }
+export async function setSharing(gid, fields) {
   const { error } = await sb.from('group_members')
-    .update({ share_weight: share })
+    .update(fields)
     .eq('group_id', gid).eq('user_id', user().id);
   if (error) throw error;
 }

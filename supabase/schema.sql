@@ -53,6 +53,8 @@ create table public.group_members (
   group_id uuid not null references public.groups(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   share_weight boolean not null default false,
+  -- opt-in to expose full weigh-in history + trend (since joining) to the group
+  share_history boolean not null default false,
   -- Weight when the member joined; leaderboard % is measured from this.
   -- Set at join time from the latest entry, backfilled from the first
   -- entry after joining when the member had no data yet.
@@ -397,3 +399,56 @@ create policy "photos: owner update" on storage.objects
 create policy "photos: owner delete" on storage.objects
   for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ============================================================
+-- Migration share_history_owner_tools (2026-08-12)
+-- Owner tools + shared history. The group_leaderboard above also gained a
+-- share_history column in its return table.
+-- ============================================================
+
+create or replace function public.is_group_owner(gid uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from groups where id = gid and created_by = auth.uid());
+$$;
+revoke execute on function public.is_group_owner(uuid) from public, anon;
+grant execute on function public.is_group_owner(uuid) to authenticated;
+
+-- Owner can rename the group and change/clear the end date
+create policy "groups: owner updates" on public.groups
+  for update to authenticated
+  using (public.is_group_owner(id)) with check (public.is_group_owner(id));
+grant update (name, ends_on) on public.groups to authenticated;
+
+-- Owner can remove members (self-leave policy already exists)
+create policy "group_members: owner removes" on public.group_members
+  for delete to authenticated
+  using (public.is_group_owner(group_id));
+
+grant update (share_history) on public.group_members to authenticated;
+
+-- A member's full weigh-in history, for the shared trend/history view.
+-- Only for co-members, and only when that member opted in (or it's you);
+-- sharing is an explicit opt-in, so the whole history is shown.
+create function public.member_history(gid uuid, member uuid)
+returns table (d date, w numeric)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_group_member(gid, auth.uid()) then
+    raise exception 'Not a member of this group';
+  end if;
+  if not public.is_group_member(gid, member) then
+    raise exception 'That person is not in this group';
+  end if;
+  if member <> auth.uid() and not exists (
+    select 1 from group_members gm
+    where gm.group_id = gid and gm.user_id = member and gm.share_history
+  ) then
+    raise exception 'This member does not share their history';
+  end if;
+  return query
+  select e.d, e.w from entries e
+  where e.user_id = member
+  order by e.d;
+end $$;
+revoke execute on function public.member_history(uuid, uuid) from public, anon;
+grant execute on function public.member_history(uuid, uuid) to authenticated;

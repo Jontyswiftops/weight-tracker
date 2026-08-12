@@ -1,8 +1,10 @@
-// Groups tab: list + create + join, and the group screen with the
-// percentage leaderboard, share-weight toggle and activity feed.
+// Groups tab: list + create + join, the group screen (percentage
+// leaderboard, sharing toggles, activity feed, owner tools), and the
+// shared member trend/history view.
 import * as store from '../store.js';
 import * as cloud from '../cloud.js';
-import { G, esc, fmtDate, toast, showErr, hideErr } from '../util.js';
+import { G, esc, fmtDate, signed, cls, toast, showErr, hideErr } from '../util.js';
+import { renderChart } from '../chart.js';
 
 let groups = [];          // cached myGroups()
 let openId = null;        // group currently open, or null for the list
@@ -10,6 +12,8 @@ let board = null;         // leaderboard rows for the open group
 let feed = null;          // feed rows for the open group
 let unsub = null;         // realtime unsubscribe for the open group
 let loading = false;
+let editMode = false;     // owner edit panel visible
+let member = null;        // { uid, name, entries } when viewing a member's trend
 
 export const groupIds = () => groups.map(g => g.id);
 
@@ -31,6 +35,12 @@ async function loadDetail(ctx) {
     board = b; feed = f;
     hideErr();
   } catch (err) {
+    if (/not a member/i.test(err.message || '')) {
+      // kicked or group gone: fall back to the list
+      closeGroup(ctx);
+      refresh(ctx);
+      return;
+    }
     showErr('Could not load the group: ' + (err.message || 'check your connection.'));
   }
   loading = false;
@@ -40,6 +50,8 @@ async function loadDetail(ctx) {
 export function openGroup(gid, ctx) {
   openId = gid;
   board = feed = null;
+  editMode = false;
+  member = null;
   if (unsub) unsub();
   unsub = cloud.subscribeGroup(gid, () => loadDetail(ctx));
   loadDetail(ctx);
@@ -49,6 +61,8 @@ export function openGroup(gid, ctx) {
 function closeGroup(ctx) {
   openId = null;
   board = feed = null;
+  editMode = false;
+  member = null;
   if (unsub) { unsub(); unsub = null; }
   ctx.rerender();
 }
@@ -57,22 +71,119 @@ const inviteLink = code => location.origin + location.pathname + '#join=' + code
 
 function pctBadge(p) {
   if (p == null) return '<div class="lbpct neutral">--</div>';
-  const cls = p < 0 ? 'good' : (p > 0 ? 'bad' : 'neutral');
-  const txt = (p > 0 ? '+' : '') + p.toFixed(1) + '%';
-  return '<div class="lbpct ' + cls + '">' + txt + '</div>';
+  const c = p < 0 ? 'good' : (p > 0 ? 'bad' : 'neutral');
+  return '<div class="lbpct ' + c + '">' + (p > 0 ? '+' : '') + p.toFixed(1) + '%</div>';
+}
+
+async function openMember(row, ctx) {
+  try {
+    const entries = await cloud.memberHistory(openId, row.user_id);
+    member = { uid: row.user_id, name: row.display_name, isSelf: row.is_self, entries };
+    hideErr();
+    ctx.rerender();
+  } catch (err) {
+    showErr(err.message || 'Could not load their history.');
+  }
+}
+
+function renderMember(el, ctx) {
+  const m = member;
+  let html = '<button class="linkbtn" id="memberBack">&lsaquo; Back to group</button>' +
+    '<div class="card chartcard"><div class="cardtitle" style="margin-left:6px">' +
+    esc(m.name) + (m.isSelf ? ' (you)' : '') + ' · trend</div>' +
+    '<canvas id="memberChart" height="220"></canvas>' +
+    '<div class="legend" id="memberLegend"><span><b style="color:var(--green)">&#8212;</b> 7-day average</span><span>&middot; daily weigh-ins</span></div></div>';
+
+  if (m.entries.length) {
+    const rev = [...m.entries].reverse();
+    html += '<div style="margin-top:14px">' + rev.map((e, i) => {
+      const prev = rev[i + 1];
+      const diff = prev ? e.w - prev.w : null;
+      return '<div class="hitem">' +
+        '<div class="hdate">' + fmtDate(e.d) + ' <small>' + e.d.slice(0, 4) + '</small></div>' +
+        '<div class="hweight">' + e.w.toFixed(1) + ' kg</div>' +
+        (diff != null ? '<div class="hdiff ' + cls(diff) + '">' + signed(diff, '') + '</div>' : '<div class="hdiff"></div>') +
+        '</div>';
+    }).join('') + '</div>';
+  } else {
+    html += '<div class="empty">No check-ins since joining yet.</div>';
+  }
+
+  el.innerHTML = html;
+  el.querySelector('#memberBack').addEventListener('click', () => { member = null; ctx.rerender(); });
+  const drawn = renderChart(el.querySelector('#memberChart'), m.entries, null);
+  if (!drawn) {
+    el.querySelector('.chartcard').querySelector('canvas').style.display = 'none';
+    el.querySelector('#memberLegend').innerHTML = '<span>The chart appears once there are a couple of check-ins.</span>';
+  }
+}
+
+function renderEdit(el, g, ctx) {
+  const others = (board || []).filter(r => !r.is_self);
+  let html = '<div class="card" style="margin-top:14px"><div class="cardtitle">Edit group</div>' +
+    '<label class="flabel" for="editName">Group name</label>' +
+    '<input type="text" id="editName" maxlength="60" value="' + esc(g.name) + '">' +
+    '<label class="flabel" for="editEnds">End date (leave empty for no end date)</label>' +
+    '<input type="date" id="editEnds" value="' + (g.ends_on || '') + '">' +
+    '<div class="row" style="margin-top:10px"><button class="btn" id="editSave" style="margin-top:0">Save</button>' +
+    '<button class="btn ghost" id="editCancel" style="margin-top:0">Cancel</button></div>';
+  if (others.length) {
+    html += '<label class="flabel" style="margin-top:16px">Members</label>' +
+      others.map(r =>
+        '<div class="hitem" style="margin-bottom:6px"><div class="hdate">' + esc(r.display_name) + '</div>' +
+        '<button class="xbtn" data-kick="' + r.user_id + '" data-kickname="' + esc(r.display_name) + '" aria-label="Remove">✕</button></div>'
+      ).join('');
+  }
+  html += '</div>';
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  el.appendChild(wrap.firstChild);
+
+  el.querySelector('#editCancel').addEventListener('click', () => { editMode = false; ctx.rerender(); });
+  el.querySelector('#editSave').addEventListener('click', async e => {
+    const name = el.querySelector('#editName').value.trim();
+    const ends = el.querySelector('#editEnds').value || null;
+    if (!name) { showErr('The group needs a name.'); return; }
+    e.target.disabled = true;
+    try {
+      await cloud.updateGroup(g.id, { name, ends_on: ends });
+      hideErr();
+      toast('Group updated');
+      editMode = false;
+      await refresh();
+      loadDetail(ctx);
+    } catch (err) {
+      showErr('Could not save: ' + err.message);
+      e.target.disabled = false;
+    }
+  });
+  el.querySelectorAll('[data-kick]').forEach(b => b.addEventListener('click', async () => {
+    const name = b.dataset.kickname;
+    if (!confirm('Remove ' + name + ' from the group? They can rejoin with the invite code.')) return;
+    try {
+      await cloud.removeMember(g.id, b.dataset.kick);
+      toast('Removed ' + name);
+      await refresh();
+      loadDetail(ctx);
+    } catch (err) { showErr('Could not remove them: ' + err.message); }
+  }));
 }
 
 function renderDetail(el, ctx) {
   const g = groups.find(x => x.id === openId);
   if (!g) { closeGroup(ctx); return; }
   const me = (board || []).find(r => r.is_self);
+  const isOwner = g.created_by === cloud.user()?.id;
   const ends = g.ends_on ? 'Ends ' + fmtDate(g.ends_on) : 'No end date';
+  const n = g.group_members?.length || 1;
 
   let html = '<button class="linkbtn" id="backBtn">&lsaquo; All groups</button>' +
     '<div class="card"><div class="cardtitle">' + esc(g.name) + '</div>' +
-    '<div class="note" style="margin-top:0">' + ends + ' · ' + (g.group_members?.length || 1) + ' member' + ((g.group_members?.length || 1) === 1 ? '' : 's') + '</div>' +
+    '<div class="note" style="margin-top:0">' + ends + ' · ' + n + ' member' + (n === 1 ? '' : 's') + '</div>' +
     '<div style="margin-top:10px" class="row"><span class="codechip">' + esc(g.invite_code) + '</span>' +
-    '<button class="btn small ghost" id="shareBtn">Share invite</button></div></div>';
+    '<button class="btn small ghost" id="shareBtn">Share invite</button>' +
+    (isOwner ? '<button class="btn small ghost" id="editBtn">Edit</button>' : '') +
+    '</div></div>';
 
   html += '<div class="card"><div class="cardtitle">Leaderboard · % of body weight</div>';
   if (loading && !board) html += '<div class="note" style="margin-top:0">Loading...</div>';
@@ -83,19 +194,26 @@ function renderDetail(el, ctx) {
       const sub = r.last_checkin
         ? '🔥 ' + r.streak + ' day streak · last check-in ' + fmtDate(r.last_checkin) + kg
         : 'No check-ins yet';
-      return '<div class="lbrow' + (r.is_self ? ' me' : '') + '">' +
+      const tappable = r.is_self || r.share_history;
+      return '<div class="lbrow' + (r.is_self ? ' me' : '') + (tappable ? ' tap" data-member="' + i : '') + '">' +
         '<div class="lbrank">' + (i + 1) + '</div>' +
         '<div class="lbmain"><div class="lbname">' + esc(r.display_name) + (r.is_self ? ' (you)' : '') + '</div>' +
         '<div class="lbsub">' + sub + '</div></div>' +
-        pctBadge(r.pct_change) + '</div>';
+        pctBadge(r.pct_change) +
+        (tappable ? '<div class="gchev">&rsaquo;</div>' : '') + '</div>';
     }).join('');
+    html += '<div class="note">Tap a member to see their trend, if they share it.</div>';
   }
   html += '</div>';
 
-  html += '<div class="card"><div class="switchrow">' +
-    '<div><div class="swlabel">Share my actual weight</div>' +
-    '<div class="swnote">Only with this group. Off means they see percentage only.</div></div>' +
+  html += '<div class="card">' +
+    '<div class="switchrow"><div><div class="swlabel">Share my actual weight</div>' +
+    '<div class="swnote">Shows your kg on this leaderboard. Off means percentage only.</div></div>' +
     '<label class="switch"><input type="checkbox" id="shareW"' + (me?.share_weight ? ' checked' : '') + '>' +
+    '<span class="slider"></span></label></div>' +
+    '<div class="switchrow" style="margin-top:14px"><div><div class="swlabel">Share my history and trend</div>' +
+    '<div class="swnote">Lets this group open your chart and weigh-ins since joining. Turns on weight sharing too.</div></div>' +
+    '<label class="switch"><input type="checkbox" id="shareH"' + (me?.share_history ? ' checked' : '') + '>' +
     '<span class="slider"></span></label></div></div>';
 
   html += '<div class="card"><div class="cardtitle">Activity</div>';
@@ -113,7 +231,13 @@ function renderDetail(el, ctx) {
   html += '<button class="linkbtn danger" id="leaveBtn">Leave this group</button>';
 
   el.innerHTML = html;
+  if (editMode) renderEdit(el, g, ctx);
+
   el.querySelector('#backBtn').addEventListener('click', () => closeGroup(ctx));
+  if (isOwner) el.querySelector('#editBtn').addEventListener('click', () => {
+    editMode = !editMode;
+    ctx.rerender();
+  });
   el.querySelector('#shareBtn').addEventListener('click', async () => {
     const url = inviteLink(g.invite_code);
     const text = 'Join my group "' + g.name + '" on Weight Check-in. Code: ' + g.invite_code;
@@ -124,15 +248,32 @@ function renderDetail(el, ctx) {
       catch { toast('Invite code: ' + g.invite_code); }
     }
   });
-  el.querySelector('#shareW').addEventListener('change', async e => {
+  el.querySelectorAll('[data-member]').forEach(d => d.addEventListener('click', () =>
+    openMember(board[+d.dataset.member], ctx)));
+
+  const applySharing = async (input, fields, onMsg, offMsg) => {
     try {
-      await cloud.setShareWeight(g.id, e.target.checked);
-      toast(e.target.checked ? 'Your weight is visible to this group' : 'Your weight is hidden again');
+      await cloud.setSharing(g.id, fields);
+      toast(input.checked ? onMsg : offMsg);
       loadDetail(ctx);
     } catch (err) {
-      e.target.checked = !e.target.checked;
+      input.checked = !input.checked;
       showErr('Could not update sharing: ' + err.message);
     }
+  };
+  el.querySelector('#shareW').addEventListener('change', e => {
+    const on = e.target.checked;
+    if (!on) el.querySelector('#shareH').checked = false;
+    applySharing(e.target,
+      on ? { share_weight: true } : { share_weight: false, share_history: false },
+      'Your weight is visible to this group', 'Your weight is hidden again');
+  });
+  el.querySelector('#shareH').addEventListener('change', e => {
+    const on = e.target.checked;
+    if (on) el.querySelector('#shareW').checked = true;
+    applySharing(e.target,
+      on ? { share_weight: true, share_history: true } : { share_history: false },
+      'Your history is visible to this group', 'Your history is hidden again');
   });
   el.querySelector('#leaveBtn').addEventListener('click', async () => {
     if (!confirm('Leave "' + g.name + '"? You can rejoin later with the invite code.')) return;
@@ -213,6 +354,7 @@ export function render(ctx) {
   const el = G('groupsView');
   if (!cloud.user()) {
     openId = null;
+    member = null;
     el.innerHTML = '<div class="empty" style="margin-top:0"><b>Group challenges</b><br>' +
       'Create a competition, invite your mates, and keep each other accountable. ' +
       'The leaderboard ranks percentage lost, never your actual weight.<br><br>' +
@@ -220,6 +362,7 @@ export function render(ctx) {
     el.querySelector('#grpSignIn').addEventListener('click', () => ctx.openTab('me'));
     return;
   }
-  if (openId) renderDetail(el, ctx);
+  if (openId && member) renderMember(el, ctx);
+  else if (openId) renderDetail(el, ctx);
   else renderList(el, ctx);
 }
