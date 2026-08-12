@@ -56,6 +56,7 @@ export function openGroup(gid, ctx) {
   unsub = cloud.subscribeGroup(gid, () => loadDetail(ctx));
   loadDetail(ctx);
   ctx.openTab('groups');
+  window.scrollTo(0, 0);
 }
 
 function closeGroup(ctx) {
@@ -65,6 +66,7 @@ function closeGroup(ctx) {
   member = null;
   if (unsub) { unsub(); unsub = null; }
   ctx.rerender();
+  window.scrollTo(0, 0);
 }
 
 const inviteLink = code => location.origin + location.pathname + '#join=' + code;
@@ -81,6 +83,7 @@ async function openMember(row, ctx) {
     member = { uid: row.user_id, name: row.display_name, isSelf: row.is_self, entries };
     hideErr();
     ctx.rerender();
+    window.scrollTo(0, 0);
   } catch (err) {
     showErr(err.message || 'Could not load their history.');
   }
@@ -110,7 +113,7 @@ function renderMember(el, ctx) {
   }
 
   el.innerHTML = html;
-  el.querySelector('#memberBack').addEventListener('click', () => { member = null; ctx.rerender(); });
+  el.querySelector('#memberBack').addEventListener('click', () => { member = null; ctx.rerender(); window.scrollTo(0, 0); });
   const drawn = renderChart(el.querySelector('#memberChart'), m.entries, null);
   if (!drawn) {
     el.querySelector('.chartcard').querySelector('canvas').style.display = 'none';
@@ -118,9 +121,9 @@ function renderMember(el, ctx) {
   }
 }
 
-function renderEdit(el, g, ctx) {
+function editHtml(g) {
   const others = (board || []).filter(r => !r.is_self);
-  let html = '<div class="card" style="margin-top:14px"><div class="cardtitle">Edit group</div>' +
+  let html = '<div class="card" id="editPanel"><div class="cardtitle">Edit group</div>' +
     '<label class="flabel" for="editName">Group name</label>' +
     '<input type="text" id="editName" maxlength="60" value="' + esc(g.name) + '">' +
     '<label class="flabel" for="editEnds">End date (leave empty for no end date)</label>' +
@@ -134,11 +137,10 @@ function renderEdit(el, g, ctx) {
         '<button class="xbtn" data-kick="' + r.user_id + '" data-kickname="' + esc(r.display_name) + '" aria-label="Remove">✕</button></div>'
       ).join('');
   }
-  html += '</div>';
-  const wrap = document.createElement('div');
-  wrap.innerHTML = html;
-  el.appendChild(wrap.firstChild);
+  return html + '</div>';
+}
 
+function wireEdit(el, g, ctx) {
   el.querySelector('#editCancel').addEventListener('click', () => { editMode = false; ctx.rerender(); });
   el.querySelector('#editSave').addEventListener('click', async e => {
     const name = el.querySelector('#editName').value.trim();
@@ -182,8 +184,12 @@ function renderDetail(el, ctx) {
     '<div class="note" style="margin-top:0">' + ends + ' · ' + n + ' member' + (n === 1 ? '' : 's') + '</div>' +
     '<div style="margin-top:10px" class="row"><span class="codechip">' + esc(g.invite_code) + '</span>' +
     '<button class="btn small ghost" id="shareBtn">Share invite</button>' +
-    (isOwner ? '<button class="btn small ghost" id="editBtn">Edit</button>' : '') +
+    (isOwner ? '<button class="btn small ghost" id="editBtn">' + (editMode ? 'Close' : 'Edit') + '</button>' : '') +
     '</div></div>';
+
+  // Edit panel sits right under the group card so it is visible the moment
+  // the Edit button is tapped (it used to render below the fold).
+  if (editMode) html += editHtml(g);
 
   html += '<div class="card"><div class="cardtitle">Leaderboard · % of body weight</div>';
   if (loading && !board) html += '<div class="note" style="margin-top:0">Loading...</div>';
@@ -231,12 +237,15 @@ function renderDetail(el, ctx) {
   html += '<button class="linkbtn danger" id="leaveBtn">Leave this group</button>';
 
   el.innerHTML = html;
-  if (editMode) renderEdit(el, g, ctx);
+  if (editMode) wireEdit(el, g, ctx);
 
   el.querySelector('#backBtn').addEventListener('click', () => closeGroup(ctx));
   if (isOwner) el.querySelector('#editBtn').addEventListener('click', () => {
     editMode = !editMode;
     ctx.rerender();
+    if (editMode) {
+      document.getElementById('editPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   });
   el.querySelector('#shareBtn').addEventListener('click', async () => {
     const url = inviteLink(g.invite_code);
