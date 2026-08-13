@@ -17,14 +17,30 @@ let member = null;        // { uid, name, entries } when viewing a member's tren
 
 export const groupIds = () => groups.map(g => g.id);
 
-export async function refresh(ctx) {
+// The list is cached on-device so a failed fetch (expired token on a cold
+// morning start, flaky radio) never renders an empty Groups tab that looks
+// like being kicked out. Fetches retry whenever the tab is viewed.
+let lastFetch = 0;
+const cacheKey = () => 'wt2:' + (cloud.user()?.id || 'none') + ':groups';
+
+export function loadCache() {
   if (!cloud.user()) { groups = []; return; }
+  try { groups = JSON.parse(localStorage.getItem(cacheKey())) || []; }
+  catch { groups = []; }
+  groups.forEach(g => cloud.subscribeGroup(g.id));
+}
+
+export async function refresh(ctx, { throttle = false } = {}) {
+  if (!cloud.user()) { groups = []; return; }
+  if (throttle && Date.now() - lastFetch < 15000) return;
   try {
     groups = await cloud.myGroups();
+    lastFetch = Date.now();
+    try { localStorage.setItem(cacheKey(), JSON.stringify(groups)); } catch {}
     // stay subscribed to every group so check-in pings reach members live
     groups.forEach(g => cloud.subscribeGroup(g.id));
     if (ctx) ctx.rerender();
-  } catch { /* offline: keep the old cache */ }
+  } catch { /* offline or token mid-refresh: keep the cached list */ }
 }
 
 async function loadDetail(ctx) {
@@ -361,6 +377,9 @@ export async function joinWithCode(code, ctx) {
 
 export function render(ctx) {
   const el = G('groupsView');
+  // self-heal: any view of this tab refetches (throttled), so a failed
+  // startup fetch fixes itself instead of showing an empty list
+  refresh(ctx, { throttle: true });
   if (!cloud.user()) {
     openId = null;
     member = null;

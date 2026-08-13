@@ -72,6 +72,7 @@ function onSignedIn(uid) {
   lastUid = uid;
   store.setUser(uid);
   me.resetProfile();
+  groupsView.loadCache();
   store.flush()
     .then(() => store.pullAll())
     .then(render)
@@ -79,6 +80,18 @@ function onSignedIn(uid) {
   groupsView.refresh(ctx);
   processPendingJoin();
   render();
+}
+
+// Catch up after the auth token refreshes or the app returns to the
+// foreground; a cold morning start can race the token refresh and leave
+// stale or missing data on screen otherwise.
+function resync() {
+  if (!cloud.user()) return;
+  store.flush()
+    .then(() => store.pullAll())
+    .then(render)
+    .catch(() => {});
+  groupsView.refresh(ctx, { throttle: true });
 }
 
 function onSignedOut() {
@@ -107,9 +120,15 @@ async function boot() {
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
       const u = cloud.user();
       if (u) onSignedIn(u.id);
+    } else if (event === 'TOKEN_REFRESHED') {
+      resync();
     } else if (event === 'SIGNED_OUT') {
       onSignedOut();
     }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) resync();
   });
 
   const u = cloud.user();
